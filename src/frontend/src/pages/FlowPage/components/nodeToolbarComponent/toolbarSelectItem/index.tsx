@@ -1,5 +1,5 @@
-import ForwardedIconComponent from "../../../../../components/genericIconComponent";
-import RenderIcons from "../../../../../components/renderIconComponent";
+import ForwardedIconComponent from "../../../../../components/common/genericIconComponent";
+import RenderIcons from "../../../../../components/common/renderIconComponent";
 import { IS_MAC } from "../../../../../constants/constants";
 import { toolbarSelectItemProps } from "../../../../../types/components";
 
@@ -11,19 +11,7 @@ export default function ToolbarSelectItem({
   ping,
   shortcut,
 }: toolbarSelectItemProps) {
-  let hasShift = false;
   const fixedShortcut = shortcut?.split("+");
-  fixedShortcut.forEach((key) => {
-    if (key.toLowerCase().includes("shift")) {
-      hasShift = true;
-    }
-  });
-  const filteredShortcut = fixedShortcut.filter(
-    (key) => !key.toLowerCase().includes("shift"),
-  );
-  let shortcutWPlus: string[] = [];
-  if (!hasShift) shortcutWPlus = filteredShortcut.join("+").split(" ");
-
   return (
     <div className={`flex ${style}`} data-testid={dataTestId}>
       <ForwardedIconComponent
@@ -40,12 +28,7 @@ export default function ToolbarSelectItem({
       <span
         className={`absolute right-2 top-[0.43em] flex items-center rounded-sm bg-muted px-1.5 py-[0.1em] text-muted-foreground`}
       >
-        <RenderIcons
-          isMac={IS_MAC}
-          hasShift={hasShift}
-          filteredShortcut={filteredShortcut}
-          shortcutWPlus={shortcutWPlus}
-        />
+        <RenderIcons filteredShortcut={fixedShortcut} />
       </span>
     </div>
   );

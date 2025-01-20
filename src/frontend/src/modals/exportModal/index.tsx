@@ -1,6 +1,8 @@
+import { track } from "@/customization/utils/analytics";
+import useFlowStore from "@/stores/flowStore";
 import { ReactNode, forwardRef, useEffect, useState } from "react";
-import EditFlowSettings from "../../components/editFlowSettingsComponent";
-import IconComponent from "../../components/genericIconComponent";
+import IconComponent from "../../components/common/genericIconComponent";
+import EditFlowSettings from "../../components/core/editFlowSettingsComponent";
 import { Checkbox } from "../../components/ui/checkbox";
 import { API_WARNING_NOTICE_ALERT } from "../../constants/alerts_constants";
 import {
@@ -10,7 +12,6 @@ import {
 } from "../../constants/constants";
 import useAlertStore from "../../stores/alertStore";
 import { useDarkStore } from "../../stores/darkStore";
-import useFlowsManagerStore from "../../stores/flowsManagerStore";
 import { downloadFlow, removeApiKeys } from "../../utils/reactflowUtils";
 import BaseModal from "../baseModal";
 
@@ -19,13 +20,15 @@ const ExportModal = forwardRef(
     const version = useDarkStore((state) => state.version);
     const setNoticeData = useAlertStore((state) => state.setNoticeData);
     const [checked, setChecked] = useState(false);
-    const currentFlow = useFlowsManagerStore((state) => state.currentFlow);
+    const currentFlow = useFlowStore((state) => state.currentFlow);
     useEffect(() => {
-      setName(currentFlow!.name);
-      setDescription(currentFlow!.description);
-    }, [currentFlow!.name, currentFlow!.description]);
-    const [name, setName] = useState(currentFlow!.name);
-    const [description, setDescription] = useState(currentFlow!.description);
+      setName(currentFlow?.name ?? "");
+      setDescription(currentFlow?.description ?? "");
+    }, [currentFlow?.name, currentFlow?.description]);
+    const [name, setName] = useState(currentFlow?.name ?? "");
+    const [description, setDescription] = useState(
+      currentFlow?.description ?? "",
+    );
     const [open, setOpen] = useState(false);
 
     return (
@@ -66,6 +69,7 @@ const ExportModal = forwardRef(
               description,
             );
           setOpen(false);
+          track("Flow Exported", { flowId: currentFlow!.id });
         }}
       >
         <BaseModal.Trigger asChild>{props.children}</BaseModal.Trigger>

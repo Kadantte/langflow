@@ -1,28 +1,30 @@
-from typing import Callable, Union, cast
+from collections.abc import Callable
+from typing import cast
 
 from pydantic import BaseModel, Field, model_serializer
 
 from langflow.inputs.inputs import InputTypes
+from langflow.inputs.utils import instantiate_input
 from langflow.template.field.base import Input
 from langflow.utils.constants import DIRECT_TYPES
 
 
 class Template(BaseModel):
     type_name: str = Field(serialization_alias="_type")
-    fields: list[Union[Input, InputTypes]]
+    fields: list[InputTypes]
 
     def process_fields(
         self,
-        format_field_func: Union[Callable, None] = None,
-    ):
+        format_field_func: Callable | None = None,
+    ) -> None:
         if format_field_func:
             for field in self.fields:
                 format_field_func(field, self.type_name)
 
-    def sort_fields(self):
+    def sort_fields(self) -> None:
         # first sort alphabetically
         # then sort fields so that fields that have .field_type in DIRECT_TYPES are first
-        self.fields.sort(key=lambda x: x.name)
+        self.fields.sort(key=lambda x: x.name or "")
         self.fields.sort(
             key=lambda x: x.field_type in DIRECT_TYPES if hasattr(x, "field_type") else False, reverse=False
         )
@@ -34,6 +36,34 @@ class Template(BaseModel):
             result[field.name] = field.model_dump(by_alias=True, exclude_none=True)
 
         return result
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Template":
+        for key, value in data.copy().items():
+            if key == "_type":
+                data["type_name"] = value
+                del data[key]
+            else:
+                value["name"] = key
+                if "fields" not in data:
+                    data["fields"] = []
+                input_type = value.pop("_input_type", None)
+                if input_type:
+                    try:
+                        input_ = instantiate_input(input_type, value)
+                    except Exception as e:
+                        msg = f"Error instantiating input {input_type}: {e}"
+                        raise ValueError(msg) from e
+                else:
+                    input_ = Input(**value)
+
+                data["fields"].append(input_)
+
+        # Necessary for components with no inputs(?)
+        if "fields" not in data:
+            data["fields"] = []
+
+        return cls(**data)
 
     # For backwards compatibility
     def to_dict(self, format_field_func=None):
@@ -48,8 +78,9 @@ class Template(BaseModel):
         """Returns the field with the given name."""
         field = next((field for field in self.fields if field.name == field_name), None)
         if field is None:
-            raise ValueError(f"Field {field_name} not found in template {self.type_name}")
-        return cast(Input, field)
+            msg = f"Field {field_name} not found in template {self.type_name}"
+            raise ValueError(msg)
+        return cast("Input", field)
 
     def update_field(self, field_name: str, field: Input) -> None:
         """Updates the field with the given name."""
@@ -57,7 +88,8 @@ class Template(BaseModel):
             if template_field.name == field_name:
                 self.fields[idx] = field
                 return
-        raise ValueError(f"Field {field_name} not found in template {self.type_name}")
+        msg = f"Field {field_name} not found in template {self.type_name}"
+        raise ValueError(msg)
 
     def upsert_field(self, field_name: str, field: Input) -> None:
         """Updates the field with the given name or adds it if it doesn't exist."""

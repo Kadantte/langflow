@@ -6,6 +6,8 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
+      "preLaunchTask": "Install Backend",
+
       "args": [
         "--factory",
         "langflow.main:create_app",
@@ -17,12 +19,13 @@
         "--loop",
         "asyncio",
         "--reload-include",
-        "src/backend/*"
+        "./src/backend/*"
       ],
       "jinja": true,
       "justMyCode": false,
       "env": {
-        "LANGFLOW_LOG_LEVEL": "debug"
+        "LANGFLOW_LOG_LEVEL": "debug",
+        "LANGFLOW_PROMETHEUS_PORT": "9090"
       },
       "envFile": "${workspaceFolder}/.env"
     },
@@ -38,6 +41,7 @@
         "--env-file",
         "${workspaceFolder}/.env"
       ],
+      // "python": "/path/to/your/python_env/python", // Replace with the path to your Python executable
       "jinja": true,
       "justMyCode": false
     },

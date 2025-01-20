@@ -1,15 +1,16 @@
+import LangflowLogo from "@/assets/LangflowLogo.svg?react";
+import { useLoginUser } from "@/controllers/API/queries/auth";
+import { CustomLink } from "@/customization/components/custom-link";
+import { ENABLE_NEW_LOGO } from "@/customization/feature-flags";
 import * as Form from "@radix-ui/react-form";
 import { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import InputComponent from "../../components/inputComponent";
+import InputComponent from "../../components/core/parameterRenderComponent/components/inputComponent";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { SIGNIN_ERROR_ALERT } from "../../constants/alerts_constants";
 import { CONTROL_LOGIN_STATE } from "../../constants/constants";
 import { AuthContext } from "../../contexts/authContext";
-import { onLogin } from "../../controllers/API";
 import useAlertStore from "../../stores/alertStore";
-import useFlowsManagerStore from "../../stores/flowsManagerStore";
 import { LoginType } from "../../types/api";
 import {
   inputHandlerEventType,
@@ -22,9 +23,7 @@ export default function LoginPage(): JSX.Element {
 
   const { password, username } = inputState;
   const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
   const setErrorData = useAlertStore((state) => state.setErrorData);
-  const setLoading = useFlowsManagerStore((state) => state.setIsLoading);
 
   function handleInput({
     target: { name, value },
@@ -32,25 +31,25 @@ export default function LoginPage(): JSX.Element {
     setInputState((prev) => ({ ...prev, [name]: value }));
   }
 
+  const { mutate } = useLoginUser();
+
   function signIn() {
     const user: LoginType = {
       username: username.trim(),
       password: password.trim(),
     };
-    onLogin(user)
-      .then((user) => {
-        console.log("login page");
 
-        setLoading(true);
-        login(user.access_token);
-        navigate("/");
-      })
-      .catch((error) => {
+    mutate(user, {
+      onSuccess: (data) => {
+        login(data.access_token, "login", data.refresh_token);
+      },
+      onError: (error) => {
         setErrorData({
           title: SIGNIN_ERROR_ALERT,
           list: [error["response"]["data"]["detail"]],
         });
-      });
+      },
+    });
   }
 
   return (
@@ -64,11 +63,18 @@ export default function LoginPage(): JSX.Element {
         const data = Object.fromEntries(new FormData(event.currentTarget));
         event.preventDefault();
       }}
-      className="h-full w-full"
+      className="h-screen w-full"
     >
       <div className="flex h-full w-full flex-col items-center justify-center bg-muted">
         <div className="flex w-72 flex-col items-center justify-center gap-2">
-          <span className="mb-4 text-5xl">⛓️</span>
+          {ENABLE_NEW_LOGO ? (
+            <LangflowLogo
+              title="Langflow logo"
+              className="mb-4 h-10 w-10 scale-[1.5]"
+            />
+          ) : (
+            <span className="mb-4 text-5xl">⛓️</span>
+          )}
           <span className="mb-6 text-2xl font-semibold text-primary">
             Sign in to Langflow
           </span>
@@ -127,11 +133,11 @@ export default function LoginPage(): JSX.Element {
             </Form.Submit>
           </div>
           <div className="w-full">
-            <Link to="/signup">
+            <CustomLink to="/signup">
               <Button className="w-full" variant="outline" type="button">
                 Don't have an account?&nbsp;<b>Sign Up</b>
               </Button>
-            </Link>
+            </CustomLink>
           </div>
         </div>
       </div>

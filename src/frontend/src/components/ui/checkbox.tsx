@@ -3,7 +3,7 @@
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import * as React from "react";
 import { cn } from "../../utils/utils";
-import IconComponent from "../genericIconComponent";
+import IconComponent from "../common/genericIconComponent";
 
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
@@ -48,4 +48,4 @@ const CheckBoxDiv = ({
   </div>
 );
 
-export { CheckBoxDiv, Checkbox };
+export { Checkbox, CheckBoxDiv };

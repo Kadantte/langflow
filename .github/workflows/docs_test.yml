@@ -12,7 +12,6 @@ on:
 env:
   NODE_VERSION: "21"
 
-
 jobs:
   test-docs-build:
     name: Test Docs Build
@@ -41,7 +40,7 @@ jobs:
       - name: Install Node.js dependencies
         run: |
           cd docs
-          npm install
+          npm install --legacy-peer-deps
         if: ${{ steps.setup-node.outputs.cache-hit != 'true' }}
 
       - name: Build Docs

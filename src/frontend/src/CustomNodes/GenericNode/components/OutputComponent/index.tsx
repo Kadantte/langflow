@@ -1,17 +1,5 @@
-import { cloneDeep } from "lodash";
-import { useUpdateNodeInternals } from "reactflow";
-import ForwardedIconComponent from "../../../../components/genericIconComponent";
-import ShadTooltip from "../../../../components/shadTooltipComponent";
-import { Button } from "../../../../components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../../../components/ui/dropdown-menu";
-import useFlowStore from "../../../../stores/flowStore";
+import ShadTooltip from "../../../../components/common/shadTooltipComponent";
 import { outputComponentType } from "../../../../types/components";
-import { NodeDataType } from "../../../../types/flow";
 import { cn } from "../../../../utils/utils";
 
 export default function OutputComponent({
@@ -22,10 +10,8 @@ export default function OutputComponent({
   idx,
   name,
   proxy,
+  isToolMode = false,
 }: outputComponentType) {
-  const setNode = useFlowStore((state) => state.setNode);
-  const updateNodeInternals = useUpdateNodeInternals();
-
   const displayProxy = (children) => {
     if (proxy) {
       return (
@@ -39,7 +25,15 @@ export default function OutputComponent({
   };
 
   return displayProxy(
-    <span className={cn(frozen ? "text-ice" : "")}>{name}</span>,
+    <span
+      className={cn(
+        "text-[13px] font-medium",
+        isToolMode && "text-secondary",
+        frozen ? "text-ice" : "",
+      )}
+    >
+      {name}
+    </span>,
   );
 
   // ! DEACTIVATED UNTIL BETTER IMPLEMENTATION

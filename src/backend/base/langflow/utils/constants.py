@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 OPENAI_MODELS = [
     "text-davinci-003",
@@ -52,20 +52,10 @@ def python_function(text: str) -> str:
 
 
 PYTHON_BASIC_TYPES = [str, bool, int, float, tuple, list, dict, set]
-DIRECT_TYPES = [
-    "str",
-    "bool",
-    "dict",
-    "int",
-    "float",
-    "Any",
-    "prompt",
-    "code",
-    "NestedDict",
-]
+DIRECT_TYPES = ["str", "bool", "dict", "int", "float", "Any", "prompt", "code", "NestedDict", "table", "slider"]
 
 
-LOADERS_INFO: List[Dict[str, Any]] = [
+LOADERS_INFO: list[dict[str, Any]] = [
     {
         "loader": "AirbyteJSONLoader",
         "name": "Airbyte JSON (.jsonl)",
@@ -177,3 +167,11 @@ LOADERS_INFO: List[Dict[str, Any]] = [
         "allowdTypes": ["docx"],
     },
 ]
+
+
+MESSAGE_SENDER_AI = "Machine"
+MESSAGE_SENDER_USER = "User"
+MESSAGE_SENDER_NAME_AI = "AI"
+MESSAGE_SENDER_NAME_USER = "User"
+
+MAX_TEXT_LENGTH = 20000

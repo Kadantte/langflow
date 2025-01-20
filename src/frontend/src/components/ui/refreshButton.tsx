@@ -1,45 +1,52 @@
-import IconComponent from "../../components/genericIconComponent";
-import { NodeDataType } from "../../types/flow";
+import { ICON_STROKE_WIDTH } from "@/constants/constants";
 import { cn } from "../../utils/utils";
+import IconComponent from "../common/genericIconComponent";
 import { Button } from "./button";
 
 function RefreshButton({
   isLoading,
   disabled,
-  name,
   button_text,
-  data,
   handleUpdateValues,
   className,
+  editNode,
   id,
 }: {
   isLoading: boolean;
   disabled: boolean;
-  name: string;
   button_text?: string;
-  data: NodeDataType;
+  editNode?: boolean;
   className?: string;
-  handleUpdateValues: (name: string, data: NodeDataType) => void;
+  handleUpdateValues: () => void;
   id: string;
 }) {
   const handleClick = async () => {
     if (disabled) return;
-    handleUpdateValues(name, data);
+    handleUpdateValues();
   };
 
-  const classNames = cn(className, disabled ? "cursor-not-allowed" : "");
+  const classNames = cn(
+    className,
+    disabled ? "cursor-not-allowed" : "",
+    !editNode ? "py-2.5 px-3" : "px-2 py-1",
+    "hit-area-icon group text-muted-foreground p-1",
+  );
 
   // icon class name should take into account the disabled state and the loading state
   const disabledIconTextClass = disabled ? "text-muted-foreground" : "";
-  const iconClassName = cn("h-4 w-4 animate-wiggle", disabledIconTextClass);
+  const iconClassName = cn(
+    "icon-size animate-wiggle group-hover:text-foreground text-muted-foreground",
+    disabledIconTextClass,
+  );
 
   return (
     <Button
-      variant="primary"
+      variant="ghost"
       disabled={disabled}
       className={classNames}
       onClick={handleClick}
       id={id}
+      size={"icon"}
       loading={isLoading}
     >
       {button_text && <span className="mr-1">{button_text}</span>}
@@ -47,6 +54,7 @@ function RefreshButton({
         name={"RefreshCcw"}
         className={iconClassName}
         id={id + "-icon"}
+        strokeWidth={ICON_STROKE_WIDTH}
       />
     </Button>
   );

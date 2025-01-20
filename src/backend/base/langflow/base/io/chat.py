@@ -1,90 +1,20 @@
-from typing import Optional, Union
-
-from langflow.base.data.utils import IMG_FILE_TYPES, TEXT_FILE_TYPES
 from langflow.custom import Component
-from langflow.memory import store_message
-from langflow.schema import Data
-from langflow.schema.message import Message
 
 
 class ChatComponent(Component):
     display_name = "Chat Component"
     description = "Use as base for chat components."
 
-    def build_config(self):
-        return {
-            "input_value": {
-                "input_types": ["Text"],
-                "display_name": "Text",
-                "multiline": True,
-            },
-            "sender": {
-                "options": ["Machine", "User"],
-                "display_name": "Sender Type",
-                "advanced": True,
-            },
-            "sender_name": {"display_name": "Sender Name", "advanced": True},
-            "session_id": {
-                "display_name": "Session ID",
-                "info": "If provided, the message will be stored in the memory.",
-                "advanced": True,
-            },
-            "return_message": {
-                "display_name": "Return Message",
-                "info": "Return the message as a Message containing the sender, sender_name, and session_id.",
-                "advanced": True,
-            },
-            "data_template": {
-                "display_name": "Data Template",
-                "multiline": True,
-                "info": "In case of Message being a Data, this template will be used to convert it to text.",
-                "advanced": True,
-            },
-            "files": {
-                "field_type": "file",
-                "display_name": "Files",
-                "file_types": TEXT_FILE_TYPES + IMG_FILE_TYPES,
-                "info": "Files to be sent with the message.",
-                "advanced": True,
-            },
-        }
-
-    def store_message(
-        self,
-        message: Message,
-    ) -> list[Message]:
-        messages = store_message(
-            message,
-            flow_id=self.graph.flow_id,
-        )
-
-        self.status = messages
-        return messages
-
-    def build_with_data(
-        self,
-        sender: Optional[str] = "User",
-        sender_name: Optional[str] = "User",
-        input_value: Optional[Union[str, Data, Message]] = None,
-        files: Optional[list[str]] = None,
-        session_id: Optional[str] = None,
-        return_message: Optional[bool] = False,
-    ) -> Message:
-        message: Message | None = None
-
-        if isinstance(input_value, Data):
-            # Update the data of the record
-            message = Message.from_data(input_value)
-        else:
-            message = Message(
-                text=input_value, sender=sender, sender_name=sender_name, files=files, session_id=session_id
-            )
-        if not return_message:
-            message_text = message.text
-        else:
-            message_text = message  # type: ignore
-
-        self.status = message_text
-        if session_id and isinstance(message, Message) and isinstance(message.text, str):
-            self.store_message(message)
-        return message_text  # type: ignore
+    def get_properties_from_source_component(self):
+        if hasattr(self, "_vertex") and hasattr(self._vertex, "incoming_edges") and self._vertex.incoming_edges:
+            source_id = self._vertex.incoming_edges[0].source_id
+            source_vertex = self.graph.get_vertex(source_id)
+            component = source_vertex.custom_component
+            source = component.display_name
+            icon = component.icon
+            possible_attributes = ["model_name", "model_id", "model"]
+            for attribute in possible_attributes:
+                if hasattr(component, attribute) and getattr(component, attribute):
+                    return getattr(component, attribute), icon, source, component._id
+            return source, icon, component.display_name, component._id
+        return None, None, None, None

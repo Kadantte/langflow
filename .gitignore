@@ -9,6 +9,7 @@ yarn-error.log*
 lerna-debug.log*
 qdrant_storage
 
+.dspy_cache
 # Mac
 .DS_Store
 
@@ -272,3 +273,7 @@ prof/*
 src/frontend/temp
 *-shm
 *-wal
+.history
+
+.dspy_cache/
+*.db

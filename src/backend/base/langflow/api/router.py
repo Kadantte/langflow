@@ -7,14 +7,17 @@ from langflow.api.v1 import (
     endpoints_router,
     files_router,
     flows_router,
+    folders_router,
     login_router,
+    mcp_router,
     monitor_router,
+    starter_projects_router,
     store_router,
     users_router,
     validate_router,
     variables_router,
-    folders_router,
 )
+from langflow.services.deps import get_settings_service
 
 router = APIRouter(
     prefix="/api/v1",
@@ -31,3 +34,7 @@ router.include_router(variables_router)
 router.include_router(files_router)
 router.include_router(monitor_router)
 router.include_router(folders_router)
+router.include_router(starter_projects_router)
+
+if get_settings_service().settings.mcp_server_enabled:
+    router.include_router(mcp_router)

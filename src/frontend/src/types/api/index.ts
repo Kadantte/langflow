@@ -1,4 +1,10 @@
-import { Edge, Node, Viewport } from "reactflow";
+import {
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import { Edge, Node, Viewport } from "@xyflow/react";
 import { ChatInputType, ChatOutputType } from "../chat";
 import { FlowType } from "../flow";
 //kind and class are just representative names to represent the actual structure of the object received by the API
@@ -7,6 +13,11 @@ export type APIObjectType = { [key: string]: APIKindType };
 export type APIKindType = { [key: string]: APIClassType };
 export type APITemplateType = {
   [key: string]: InputFieldType;
+};
+
+export type APICodeValidateType = {
+  imports: { errors: Array<string> };
+  function: { errors: Array<string> };
 };
 
 export type CustomFieldsType = {
@@ -32,13 +43,16 @@ export type APIClassType = {
   output_types?: Array<string>;
   custom_fields?: CustomFieldsType;
   beta?: boolean;
+  legacy?: boolean;
   documentation: string;
   error?: string;
   official?: boolean;
   outputs?: Array<OutputFieldType>;
   frozen?: boolean;
+  lf_version?: string;
   flow?: FlowType;
   field_order?: string[];
+  tool_mode?: boolean;
   [key: string]:
     | Array<string>
     | string
@@ -58,6 +72,7 @@ export type InputFieldType = {
   list: boolean;
   show: boolean;
   readonly: boolean;
+  password?: boolean;
   multiline?: boolean;
   value?: any;
   dynamic?: boolean;
@@ -68,7 +83,11 @@ export type InputFieldType = {
   real_time_refresh?: boolean;
   refresh_button?: boolean;
   refresh_button_text?: string;
+  combobox?: boolean;
+  info?: string;
   [key: string]: any;
+  icon?: string;
+  text?: string;
 };
 
 export type OutputFieldProxyType = {
@@ -84,16 +103,6 @@ export type OutputFieldType = {
   display_name: string;
   hidden?: boolean;
   proxy?: OutputFieldProxyType;
-};
-export type sendAllProps = {
-  nodes: Node[];
-  edges: Edge[];
-  name: string;
-  description: string;
-  viewport: Viewport;
-  inputs: { text?: string };
-  chatKey: string;
-  chatHistory: { message: string | object; isSend: boolean }[];
 };
 export type errorsTypeAPI = {
   function: { errors: Array<string> };
@@ -195,12 +204,18 @@ export type OutputLogType = {
   message: any | ErrorLogType;
   type: string;
 };
+export type LogsLogType = {
+  name: string;
+  message: any | ErrorLogType;
+  type: string;
+};
 
 // data is the object received by the API
 // it has results, artifacts, timedelta, duration
 export type VertexDataTypeAPI = {
   results: { [key: string]: string };
   outputs: { [key: string]: OutputLogType };
+  logs: { [key: string]: LogsLogType };
   messages: ChatOutputType[] | ChatInputType[];
   inactive?: boolean;
   timedelta?: number;
@@ -224,4 +239,85 @@ export type ResponseErrorTypeAPI = {
 };
 export type ResponseErrorDetailAPI = {
   response: { data: { detail: string } };
+};
+export type useQueryFunctionType<T = undefined, R = any> = T extends undefined
+  ? (
+      options?: Omit<UseQueryOptions, "queryFn" | "queryKey">,
+    ) => UseQueryResult<R>
+  : (
+      params: T,
+      options?: Omit<UseQueryOptions, "queryFn" | "queryKey">,
+    ) => UseQueryResult<R>;
+
+export type QueryFunctionType = (
+  queryKey: UseQueryOptions["queryKey"],
+  queryFn: UseQueryOptions["queryFn"],
+  options?: Omit<UseQueryOptions, "queryKey" | "queryFn">,
+) => UseQueryResult<any>;
+
+export type MutationFunctionType = (
+  mutationKey: UseMutationOptions["mutationKey"],
+  mutationFn: UseMutationOptions<any, any, any>["mutationFn"],
+  options?: Omit<UseMutationOptions<any, any>, "mutationFn" | "mutationKey">,
+) => UseMutationResult<any, any, any, any>;
+
+export type useMutationFunctionType<
+  Params,
+  Variables = any,
+  Data = any,
+  Error = any,
+> = Params extends undefined
+  ? (
+      options?: Omit<
+        UseMutationOptions<Data, Error>,
+        "mutationFn" | "mutationKey"
+      >,
+    ) => UseMutationResult<Data, Error, Variables>
+  : (
+      params: Params,
+      options?: Omit<
+        UseMutationOptions<Data, Error>,
+        "mutationFn" | "mutationKey"
+      >,
+    ) => UseMutationResult<Data, Error, Variables>;
+
+export type FieldValidatorType =
+  | "no_spaces"
+  | "lowercase"
+  | "uppercase"
+  | "email"
+  | "url"
+  | "alphanumeric"
+  | "numeric"
+  | "alpha"
+  | "phone"
+  | "slug"
+  | "username"
+  | "password";
+
+export type FieldParserType =
+  | "snake_case"
+  | "camel_case"
+  | "pascal_case"
+  | "kebab_case"
+  | "lowercase"
+  | "uppercase"
+  | "no_blank"
+  | "valid_csv"
+  | "commands";
+
+export type TableOptionsTypeAPI = {
+  block_add?: boolean;
+  block_delete?: boolean;
+  block_edit?: boolean;
+  block_sort?: boolean;
+  block_filter?: boolean;
+  block_hide?: boolean | string[];
+  block_select?: boolean;
+  hide_options?: boolean;
+  field_validators?: Array<
+    FieldValidatorType | { [key: string]: FieldValidatorType }
+  >;
+  field_parsers?: Array<FieldParserType | { [key: string]: FieldParserType }>;
+  description?: string;
 };

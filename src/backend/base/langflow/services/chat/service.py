@@ -1,39 +1,67 @@
 import asyncio
 from collections import defaultdict
-from typing import Any, Optional
+from threading import RLock
+from typing import Any
 
 from langflow.services.base import Service
+from langflow.services.cache.base import AsyncBaseCacheService, CacheService
 from langflow.services.deps import get_cache_service
 
 
 class ChatService(Service):
+    """Service class for managing chat-related operations."""
+
     name = "chat_service"
 
-    def __init__(self):
-        self._cache_locks = defaultdict(asyncio.Lock)
-        self.cache_service = get_cache_service()
+    def __init__(self) -> None:
+        self.async_cache_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+        self._sync_cache_locks: dict[str, RLock] = defaultdict(RLock)
+        self.cache_service: CacheService | AsyncBaseCacheService = get_cache_service()
 
-    async def set_cache(self, key: str, data: Any, lock: Optional[asyncio.Lock] = None) -> bool:
+    async def set_cache(self, key: str, data: Any, lock: asyncio.Lock | None = None) -> bool:
+        """Set the cache for a client.
+
+        Args:
+            key (str): The cache key.
+            data (Any): The data to be cached.
+            lock (Optional[asyncio.Lock], optional): The lock to use for the cache operation. Defaults to None.
+
+        Returns:
+            bool: True if the cache was set successfully, False otherwise.
         """
-        Set the cache for a client.
-        """
-        # client_id is the flow id but that already exists in the cache
-        # so we need to change it to something else
         result_dict = {
             "result": data,
             "type": type(data),
         }
-        await self.cache_service.upsert(str(key), result_dict, lock=lock or self._cache_locks[key])
+        if isinstance(self.cache_service, AsyncBaseCacheService):
+            await self.cache_service.upsert(str(key), result_dict, lock=lock or self.async_cache_locks[key])
+            return await self.cache_service.contains(key)
+        await asyncio.to_thread(
+            self.cache_service.upsert, str(key), result_dict, lock=lock or self._sync_cache_locks[key]
+        )
         return key in self.cache_service
 
-    async def get_cache(self, key: str, lock: Optional[asyncio.Lock] = None) -> Any:
-        """
-        Get the cache for a client.
-        """
-        return await self.cache_service.get(key, lock=lock or self._cache_locks[key])
+    async def get_cache(self, key: str, lock: asyncio.Lock | None = None) -> Any:
+        """Get the cache for a client.
 
-    async def clear_cache(self, key: str, lock: Optional[asyncio.Lock] = None):
+        Args:
+            key (str): The cache key.
+            lock (Optional[asyncio.Lock], optional): The lock to use for the cache operation. Defaults to None.
+
+        Returns:
+            Any: The cached data.
         """
-        Clear the cache for a client.
+        if isinstance(self.cache_service, AsyncBaseCacheService):
+            return await self.cache_service.get(key, lock=lock or self.async_cache_locks[key])
+        return await asyncio.to_thread(self.cache_service.get, key, lock=lock or self._sync_cache_locks[key])
+
+    async def clear_cache(self, key: str, lock: asyncio.Lock | None = None) -> None:
+        """Clear the cache for a client.
+
+        Args:
+            key (str): The cache key.
+            lock (Optional[asyncio.Lock], optional): The lock to use for the cache operation. Defaults to None.
         """
-        await self.cache_service.delete(key, lock=lock or self._cache_locks[key])
+        if isinstance(self.cache_service, AsyncBaseCacheService):
+            return await self.cache_service.delete(key, lock=lock or self.async_cache_locks[key])
+        return await asyncio.to_thread(self.cache_service.delete, key, lock=lock or self._sync_cache_locks[key])

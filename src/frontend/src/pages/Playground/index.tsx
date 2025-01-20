@@ -1,64 +1,71 @@
-import { useEffect, useState } from "react";
+import { useGetFlow } from "@/controllers/API/queries/flows/use-get-flow";
+import { useCustomNavigate } from "@/customization/hooks/use-custom-navigate";
+import { track } from "@/customization/utils/analytics";
+import IOModal from "@/modals/IOModal/new-modal";
+import { useStoreStore } from "@/stores/storeStore";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import LoadingComponent from "../../components/loadingComponent";
 import { getComponent } from "../../controllers/API";
-import IOModal from "../../modals/IOModal";
-import useFlowStore from "../../stores/flowStore";
 import useFlowsManagerStore from "../../stores/flowsManagerStore";
 import cloneFLowWithParent from "../../utils/storeUtils";
 
 export default function PlaygroundPage() {
-  const currentFlow = useFlowsManagerStore((state) => state.currentFlow);
-  const getFlowById = useFlowsManagerStore((state) => state.getFlowById);
-  const setCurrentFlowId = useFlowsManagerStore(
-    (state) => state.setCurrentFlowId,
-  );
-  const currentFlowId = useFlowsManagerStore((state) => state.currentFlowId);
   const setCurrentFlow = useFlowsManagerStore((state) => state.setCurrentFlow);
-  const setNodes = useFlowStore((state) => state.setNodes);
-  const setEdges = useFlowStore((state) => state.setEdges);
-  const cleanFlowPool = useFlowStore((state) => state.CleanFlowPool);
-
+  const currentSavedFlow = useFlowsManagerStore((state) => state.currentFlow);
+  const validApiKey = useStoreStore((state) => state.validApiKey);
   const { id } = useParams();
-  const [loading, setLoading] = useState(true);
+  const { mutateAsync: getFlow } = useGetFlow();
+
+  const navigate = useCustomNavigate();
+
+  const currentFlowId = useFlowsManagerStore((state) => state.currentFlowId);
+  const setIsLoading = useFlowsManagerStore((state) => state.setIsLoading);
+
   async function getFlowData() {
-    const res = await getComponent(id!);
-    const newFlow = cloneFLowWithParent(res, res.id, false, true);
-    return newFlow;
+    try {
+      const flow = await getFlow({ id: id! });
+      return flow;
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        if (!validApiKey) {
+          return null;
+        }
+        try {
+          const res = await getComponent(id!);
+          const newFlow = cloneFLowWithParent(res, res.id, false, true);
+          return newFlow;
+        } catch (componentError) {
+          return null;
+        }
+      }
+      return null;
+    }
   }
 
-  // Set flow tab id
   useEffect(() => {
-    if (getFlowById(id!)) {
-      setCurrentFlowId(id!);
-    } else {
-      getFlowData().then((flow) => {
-        setCurrentFlow(flow);
-      });
-    }
-  }, [id]);
+    const initializeFlow = async () => {
+      setIsLoading(true);
+      if (currentFlowId === "") {
+        const flow = await getFlowData();
+        if (flow) {
+          setCurrentFlow(flow);
+        } else {
+          navigate("/");
+        }
+      }
+    };
+
+    initializeFlow();
+    setIsLoading(false);
+  }, [id, validApiKey]);
 
   useEffect(() => {
-    if (currentFlow) {
-      setNodes(currentFlow?.data?.nodes ?? [], true);
-      setEdges(currentFlow?.data?.edges ?? [], true);
-      cleanFlowPool();
-      setLoading(false);
-    }
-    return () => {
-      setNodes([], true);
-      setEdges([], true);
-      cleanFlowPool();
-    };
-  }, [currentFlow]);
+    if (id) track("Playground Page Loaded", { flowId: id });
+  }, []);
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center align-middle">
-      {loading ? (
-        <div>
-          <LoadingComponent remSize={24}></LoadingComponent>
-        </div>
-      ) : (
+      {currentSavedFlow && (
         <IOModal open={true} setOpen={() => {}} isPlayground>
           <></>
         </IOModal>

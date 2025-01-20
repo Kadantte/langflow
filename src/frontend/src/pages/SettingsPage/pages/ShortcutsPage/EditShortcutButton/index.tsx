@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import useAlertStore from "../../../../../stores/alertStore";
 
-import ForwardedIconComponent from "../../../../../components/genericIconComponent";
+import RenderKey from "@/components/common/renderIconComponent/components/renderKey";
+import ForwardedIconComponent from "../../../../../components/common/genericIconComponent";
 import { Button } from "../../../../../components/ui/button";
 import BaseModal from "../../../../../modals/baseModal";
 import { useShortcutsStore } from "../../../../../stores/shortcuts";
-import { toTitleCase } from "../../../../../utils/utils";
+import { toCamelCase, toTitleCase } from "../../../../../utils/utils";
 
 export default function EditShortcutButton({
   children,
   shortcut,
   defaultShortcuts,
-  defaultCombination,
   open,
   setOpen,
   disable,
@@ -19,8 +19,11 @@ export default function EditShortcutButton({
 }: {
   children: JSX.Element;
   shortcut: string[];
-  defaultShortcuts: Array<{ name: string; shortcut: string }>;
-  defaultCombination: string;
+  defaultShortcuts: Array<{
+    name: string;
+    shortcut: string;
+    display_name: string;
+  }>;
   open: boolean;
   setOpen: (bool: boolean) => void;
   disable?: boolean;
@@ -29,9 +32,7 @@ export default function EditShortcutButton({
   let shortcutInitialValue =
     defaultShortcuts.length > 0
       ? defaultShortcuts.find(
-          (s) =>
-            s.name.split(" ")[0].toLowerCase().toLowerCase() ===
-            shortcut[0]?.split(" ")[0].toLowerCase(),
+          (s) => toCamelCase(s.name) === toCamelCase(shortcut[0]),
         )?.shortcut
       : "";
   const [key, setKey] = useState<string | null>(null);
@@ -56,12 +57,6 @@ export default function EditShortcutButton({
   function editCombination(): void {
     if (key) {
       if (canEditCombination(key)) {
-        const newCombination = defaultShortcuts.map((s) => {
-          if (s.name === shortcut[0]) {
-            return { name: s.name, shortcut: key };
-          }
-          return { name: s.name, shortcut: s.shortcut };
-        });
         const fixCombination = key.split(" ");
         if (
           fixCombination[0].toLowerCase().includes("ctrl") ||
@@ -69,7 +64,21 @@ export default function EditShortcutButton({
         ) {
           fixCombination[0] = "mod";
         }
-        const shortcutName = shortcut[0].split(" ")[0].toLowerCase();
+        const newCombination = defaultShortcuts.map((s) => {
+          if (s.name === shortcut[0]) {
+            return {
+              name: s.name,
+              display_name: s.display_name,
+              shortcut: fixCombination.join("").toLowerCase(),
+            };
+          }
+          return {
+            name: s.name,
+            display_name: s.display_name,
+            shortcut: s.shortcut,
+          };
+        });
+        const shortcutName = toCamelCase(shortcut[0]);
         setUniqueShortcut(shortcutName, fixCombination.join("").toLowerCase());
         setShortcuts(newCombination);
         localStorage.setItem(
@@ -161,10 +170,10 @@ export default function EditShortcutButton({
       <BaseModal.Trigger>{children}</BaseModal.Trigger>
       <BaseModal.Content>
         <div className="align-center flex h-full w-full justify-center gap-4 rounded-md border border-border py-2">
-          <div className="flex items-center justify-center text-center text-lg font-bold">
-            {key === null
-              ? shortcutInitialValue?.toUpperCase()
-              : key.toUpperCase()}
+          <div className="flex items-center justify-center gap-0.5 text-center text-lg font-bold">
+            {(key ?? shortcutInitialValue ?? "").split("+").map((k, i) => (
+              <RenderKey key={i} value={k} tableRender />
+            ))}
           </div>
         </div>
       </BaseModal.Content>

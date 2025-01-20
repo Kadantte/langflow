@@ -1,37 +1,34 @@
+import useFlowStore from "@/stores/flowStore";
+import { AllNodeType } from "@/types/flow";
+import { useUpdateNodeInternals } from "@xyflow/react";
 import { cloneDeep } from "lodash";
-import { NodeDataType } from "../../types/flow";
 
 const useHandleNodeClass = (
-  data: NodeDataType,
-  name: string,
-  takeSnapshot: () => void,
-  setNode: (id: string, callback: (oldNode: any) => any) => void,
-  updateNodeInternals: (id: string) => void,
+  nodeId: string,
+  setMyNode?: (
+    id: string,
+    update: AllNodeType | ((oldState: AllNodeType) => AllNodeType),
+  ) => void,
 ) => {
-  const handleNodeClass = (newNodeClass, code, type?: string) => {
-    if (!data.node) return;
-    if (data.node!.template[name].value !== code) {
-      takeSnapshot();
-    }
+  const setNode = setMyNode ?? useFlowStore((state) => state.setNode);
+  const updateNodeInternals = useUpdateNodeInternals();
 
-    setNode(data.id, (oldNode) => {
+  const handleNodeClass = (newNodeClass, type?: string) => {
+    setNode(nodeId, (oldNode) => {
       let newNode = cloneDeep(oldNode);
 
       newNode.data = {
         ...newNode.data,
-        node: newNodeClass,
-        description: newNodeClass.description ?? data.node!.description,
-        display_name: newNodeClass.display_name ?? data.node!.display_name,
+        node: cloneDeep(newNodeClass),
       };
       if (type) {
-        newNode.data.node.template[name].type = type;
+        newNode.data.type = type;
       }
-      newNode.data.node.template[name].value = code;
+
+      updateNodeInternals(nodeId);
 
       return newNode;
     });
-
-    updateNodeInternals(data.id);
   };
 
   return { handleNodeClass };
